@@ -367,7 +367,7 @@ def main():
     
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Search Kiwix server')
-    parser.add_argument('query', nargs='+', help='Search term(s)')
+    parser.add_argument('query', nargs='*', help='Search term(s)')
     parser.add_argument('--book', '-b', help='Specific book to search')
     parser.add_argument('--all', '-a', action='store_true', help='Search all books')
     parser.add_argument('--fetch', '-f', help='Fetch full article content for a given URL path')
@@ -375,11 +375,15 @@ def main():
     
     args = parser.parse_args()
     
-    # If --tool-definition flag is used, print the tool definition and exit
+    # If --tool-definition flag is used, print the tool definition and exit immediately
     if args.tool_definition:
         tool_definition = get_tool_definition()
         print(json.dumps(tool_definition, indent=2))
         return
+    
+    # Validate that query is provided (unless --tool-definition is used, which we already handled)
+    if not args.query and not args.tool_definition:
+        parser.error("the following arguments are required: query")
     
     # If --fetch flag is used, fetch the article and exit
     if args.fetch:
