@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import argparse
 import yaml
 import os
+import json
 
 def load_config():
     """Load configuration from config.yaml or use defaults"""
@@ -44,7 +45,39 @@ def load_config():
             'wikipedia_en_all_maxi_2026-02',
             'wikivoyage_de_all_maxi_2026-04',
             'wiktionary_en_all_nopic_2025-09'
-        ]
+        ],
+        'keyword_mapping': {
+            # Hardware/Maker
+            'raspberry pi': ['raspberrypi.stackexchange.com_en_all_2026-02', 'ifixit_en_all_2025-12'],
+            'esp32': ['iot.stackexchange.com_en_all_2026-02', 'electronics.stackexchange.com_en_all_2026-02'],
+            'gpio': ['raspberrypi.stackexchange.com_en_all_2026-02', 'electronics.stackexchange.com_en_all_2026-02'],
+            'arduino': ['arduino.stackexchange.com_en_all_2026-02', 'electronics.stackexchange.com_en_all_2026-02'],
+            
+            # Sysadmin
+            'docker': ['devops.stackexchange.com_en_all_2026-02', 'unix.stackexchange.com_en_all_2026-02'],
+            'nginx': ['devdocs_en_nginx_2026-04', 'unix.stackexchange.com_en_all_2026-02'],
+            'bash': ['unix.stackexchange.com_en_all_2026-02'],
+            'unix': ['unix.stackexchange.com_en_all_2026-02'],
+            
+            # Programming
+            'python': ['devdocs_en_python_2026-05', 'freecodecamp_en_all_2026-05', 'cs.stackexchange.com_en_all_2026-02'],
+            'coding': ['freecodecamp_en_all_2026-05', 'cs.stackexchange.com_en_all_2026-02'],
+            'algorithm': ['cs.stackexchange.com_en_all_2026-02', 'datascience.stackexchange.com_en_all_2026-02'],
+            
+            # Data Science
+            'data science': ['datascience.stackexchange.com_en_all_2026-02'],
+            'machine learning': ['ai.stackexchange.com_en_all_2026-02'],
+            'artificial intelligence': ['ai.stackexchange.com_en_all_2026-02'],
+            
+            # Web Development
+            'web': ['freecodecamp_en_all_2026-05', 'devdocs_en_python_2026-05'],
+            
+            # General
+            'wiki': ['wikipedia_en_all_maxi_2026-02'],
+        },
+        'results_per_book': 3,
+        'max_total_results': 10,
+        'single_book_limit': 5
     }
     
     if os.path.exists(config_file):
@@ -66,48 +99,18 @@ def load_config():
         print(f"Warning: Config file {config_file} not found. Using default configuration.")
         return default_config
 
-def get_relevant_books(query, books):
+def get_relevant_books(query, books, keyword_mapping):
     """
     Score books based on keyword relevance to the query.
     
     Args:
         query (str): The search query string
         books (list): List of all available books
+        keyword_mapping (dict): Mapping of keywords to relevant books
         
     Returns:
         list: Prioritized list of books with matched books first
     """
-    # Define keyword mappings to relevant books
-    keyword_mapping = {
-        # Hardware/Maker
-        'raspberry pi': ['raspberrypi.stackexchange.com_en_all_2026-02', 'ifixit_en_all_2025-12'],
-        'esp32': ['iot.stackexchange.com_en_all_2026-02', 'electronics.stackexchange.com_en_all_2026-02'],
-        'gpio': ['raspberrypi.stackexchange.com_en_all_2026-02', 'electronics.stackexchange.com_en_all_2026-02'],
-        'arduino': ['arduino.stackexchange.com_en_all_2026-02', 'electronics.stackexchange.com_en_all_2026-02'],
-        
-        # Sysadmin
-        'docker': ['devops.stackexchange.com_en_all_2026-02', 'unix.stackexchange.com_en_all_2026-02'],
-        'nginx': ['devdocs_en_nginx_2026-04', 'unix.stackexchange.com_en_all_2026-02'],
-        'bash': ['unix.stackexchange.com_en_all_2026-02'],
-        'unix': ['unix.stackexchange.com_en_all_2026-02'],
-        
-        # Programming
-        'python': ['devdocs_en_python_2026-05', 'freecodecamp_en_all_2026-05', 'cs.stackexchange.com_en_all_2026-02'],
-        'coding': ['freecodecamp_en_all_2026-05', 'cs.stackexchange.com_en_all_2026-02'],
-        'algorithm': ['cs.stackexchange.com_en_all_2026-02', 'datascience.stackexchange.com_en_all_2026-02'],
-        
-        # Data Science
-        'data science': ['datascience.stackexchange.com_en_all_2026-02'],
-        'machine learning': ['ai.stackexchange.com_en_all_2026-02'],
-        'artificial intelligence': ['ai.stackexchange.com_en_all_2026-02'],
-        
-        # Web Development
-        'web': ['freecodecamp_en_all_2026-05', 'devdocs_en_python_2026-05'],
-        
-        # General
-        'wiki': ['wikipedia_en_all_maxi_2026-02'],
-    }
-    
     # Normalize query to lowercase for matching
     query_lower = query.lower()
     
@@ -139,14 +142,14 @@ def get_relevant_books(query, books):
     
     return prioritized_books
 
-def search_kiwix_single_book(query, book_name, server_url):
-    """Search Kiwix server for a single book and return top 5 results"""
+def search_kiwix_single_book(query, book_name, server_url, limit=None):
+    """Search Kiwix server for a single book and return top results"""
     # Construct the search URL with required parameters
     search_url = f"{server_url}/search"
     params = {
         'pattern': query,
         'books.name': book_name,
-        'limit': 3
+        'limit': limit or 5  # Default to 5 if no limit provided
     }
     
     try:
@@ -195,12 +198,12 @@ def search_kiwix_single_book(query, book_name, server_url):
         print(f"Error parsing response for {book_name}: {e}")
         return []
 
-def search_kiwix_all_books(query, books, server_url):
+def search_kiwix_all_books(query, books, server_url, keyword_mapping, config):
     """Search all books and merge results"""
     all_results = []
     
     # Use prioritized books list if query has relevant keywords
-    prioritized_books = get_relevant_books(query, books)
+    prioritized_books = get_relevant_books(query, books, keyword_mapping)
     
     # If we have a prioritized list that's different from the original, use it
     if prioritized_books != books:
@@ -208,9 +211,14 @@ def search_kiwix_all_books(query, books, server_url):
     else:
         books_to_search = books
     
+    # Get config values
+    results_per_book = config.get('results_per_book', 3)
+    single_book_limit = config.get('single_book_limit', 5)
+    
     for book in books_to_search:
         print(f"Searching in {book}...")
-        results = search_kiwix_single_book(query, book, server_url)
+        # Use results_per_book for multi-book searches, not single_book_limit
+        results = search_kiwix_single_book(query, book, server_url, limit=results_per_book)
         all_results.extend(results)
     
     # Deduplicate by URL path
@@ -222,8 +230,34 @@ def search_kiwix_all_books(query, books, server_url):
             seen_urls.add(result['url_path'])
             unique_results.append(result)
     
-    # Return top 10
-    return unique_results[:10]
+    # Return top results based on max_total_results
+    max_total_results = config.get('max_total_results', 10)
+    return unique_results[:max_total_results]
+
+def get_tool_definition():
+    """Return an OpenAI function calling schema dict for the search() function"""
+    return {
+        "name": "search",
+        "description": "Search Kiwix server for content across books",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "The search query string"
+                },
+                "book": {
+                    "type": "string",
+                    "description": "Specific book to search. Must be a book name from the books list."
+                },
+                "all_books": {
+                    "type": "boolean",
+                    "description": "If True, search all books"
+                }
+            },
+            "required": ["query"]
+        }
+    }
 
 def print_results(results):
     """Print search results in a clean format"""
@@ -314,10 +348,11 @@ def search(query, book=None, all_books=False, config=None):
     server_url = config['kiwix_server_url']
     default_book = config['default_book']
     books = config['books']
+    keyword_mapping = config['keyword_mapping']
     
     # Perform search based on arguments
     if all_books:
-        results = search_kiwix_all_books(query, books, server_url)
+        results = search_kiwix_all_books(query, books, server_url, keyword_mapping, config)
     elif book:
         results = search_kiwix_single_book(query, book, server_url)
     else:
@@ -336,8 +371,15 @@ def main():
     parser.add_argument('--book', '-b', help='Specific book to search')
     parser.add_argument('--all', '-a', action='store_true', help='Search all books')
     parser.add_argument('--fetch', '-f', help='Fetch full article content for a given URL path')
+    parser.add_argument('--tool-definition', action='store_true', help='Print tool definition as JSON and exit')
     
     args = parser.parse_args()
+    
+    # If --tool-definition flag is used, print the tool definition and exit
+    if args.tool_definition:
+        tool_definition = get_tool_definition()
+        print(json.dumps(tool_definition, indent=2))
+        return
     
     # If --fetch flag is used, fetch the article and exit
     if args.fetch:

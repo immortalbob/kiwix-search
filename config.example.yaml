@@ -40,3 +40,62 @@ books:
   - "wikipedia_en_all_maxi_2026-02"
   - "wikivoyage_de_all_maxi_2026-04"
   - "wiktionary_en_all_nopic_2025-09"
+
+# Keyword mapping for relevance scoring
+# Maps search keywords to lists of relevant book names
+# This helps prioritize book searches based on query content
+keyword_mapping:
+  # Hardware/Maker
+  raspberry pi:
+    - "raspberrypi.stackexchange.com_en_all_2026-02"
+    - "ifixit_en_all_2025-12"
+  esp32:
+    - "iot.stackexchange.com_en_all_2026-02"
+    - "electronics.stackexchange.com_en_all_2026-02"
+  gpio:
+    - "raspberrypi.stackexchange.com_en_all_2026-02"
+    - "electronics.stackexchange.com_en_all_2026-02"
+  arduino:
+    - "arduino.stackexchange.com_en_all_2026-02"
+    - "electronics.stackexchange.com_en_all_2026-02"
+  
+  # Sysadmin
+  docker:
+    - "devops.stackexchange.com_en_all_2026-02"
+    - "unix.stackexchange.com_en_all_2026-02"
+  nginx:
+    - "devdocs_en_nginx_2026-04"
+    - "unix.stackexchange.com_en_all_2026-02"
+  bash:
+    - "unix.stackexchange.com_en_all_2026-02"
+  unix:
+    - "unix.stackexchange.com_en_all_2026-02"
+  
+  # Programming
+  python:
+    - "devdocs_en_python_2026-05"
+    - "freecodecamp_en_all_2026-05"
+    - "cs.stackexchange.com_en_all_2026-02"
+  coding:
+    - "freecodecamp_en_all_2026-05"
+    - "cs.stackexchange.com_en_all_2026-02"
+  algorithm:
+    - "cs.stackexchange.com_en_all_2026-02"
+    - "datascience.stackexchange.com_en_all_2026-02"
+  
+  # Data Science
+  data science:
+    - "datascience.stackexchange.com_en_all_2026-02"
+  machine learning:
+    - "ai.stackexchange.com_en_all_2026-02"
+  artificial intelligence:
+    - "ai.stackexchange.com_en_all_2026-02"
+  
+  # Web Development
+  web:
+    - "freecodecamp_en_all_2026-05"
+    - "devdocs_en_python_2026-05"
+  
+  # General
+  wiki:
+    - "wikipedia_en_all_maxi_2026-02"

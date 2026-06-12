@@ -20,16 +20,24 @@ Copy `config.example.yaml` to `config.yaml` and update to match your setup:
 cp config.example.yaml config.yaml
 ```
 
+Key config options:
+
 ```yaml
-kiwix_server_url: "http://192.168.3.5:8081"
-default_book: "wikipedia_en_all_maxi_2026-02"
-books:
+kiwix_server_url: "http://192.168.3.5:8081"   # your Kiwix server
+default_book: "wikipedia_en_all_maxi_2026-02"  # default book for unscoped searches
+results_per_book: 3       # results fetched per book in --all mode
+max_total_results: 10     # total results returned in --all mode
+single_book_limit: 5      # results returned for single book searches
+books:                    # list of ZIM files on your server
   - "wikipedia_en_all_maxi_2026-02"
-  - "raspberrypi.stackexchange.com_en_all_2026-02"
-  # ... add your ZIM files here
+  - ...
+keyword_mapping:          # maps query keywords to relevant books for relevance weighting
+  raspberry pi:
+    - "raspberrypi.stackexchange.com_en_all_2026-02"
+  ...
 ```
 
-If `config.yaml` is not found, the script falls back to built-in defaults with a warning. Book names correspond to ZIM filenames without the `.zim` extension.
+If `config.yaml` is not found the script falls back to built-in defaults with a warning. Book names correspond to ZIM filenames without the `.zim` extension.
 
 ## CLI Usage
 
@@ -56,12 +64,17 @@ python kiwix_search.py --fetch /content/wikipedia_en_all_maxi_2026-02/Python_(pr
 python kiwix_search.py -f /content/raspberrypi.stackexchange.com_en_all_2026-02/questions/117591/controlling-raspberry-pi-gpio-with-c-and-python
 ```
 
+### Print OpenAI function calling schema
+```bash
+python kiwix_search.py --tool-definition
+```
+
 ## Module Usage
 
 `kiwix_search` can be imported directly for use in scripts or agent tool integrations:
 
 ```python
-from kiwix_search import search, fetch_article
+from kiwix_search import search, fetch_article, get_tool_definition
 
 # Search default book (Wikipedia)
 results = search("artificial intelligence")
@@ -75,6 +88,9 @@ results = search("raspberry pi gpio", all_books=True)
 # Fetch full article text from a result URL path
 article = fetch_article(results[0]['url_path'])
 
+# Get OpenAI function calling schema for agent integration
+schema = get_tool_definition()
+
 # Results are a list of dicts
 for r in results:
     print(r['title'])
@@ -85,22 +101,15 @@ for r in results:
 
 ## How It Works
 
-- Single book searches return up to 5 results
-- `--all` / `all_books=True` uses keyword-based relevance weighting to prioritize the most relevant books for the query, then searches all configured books in that order
-- Results are deduplicated by URL path and the top 10 are returned
+- Single book searches return up to `single_book_limit` results (default 5)
+- `--all` / `all_books=True` uses keyword-based relevance weighting to prioritize the most relevant books for the query, fetches `results_per_book` results per book (default 3), deduplicates by URL path, and returns up to `max_total_results` (default 10)
 - `fetch_article()` retrieves the full plain text of any article by URL path — enables a complete search → read loop for agent use
+- `get_tool_definition()` returns the OpenAI function calling schema for drop-in agent integration
 - The Kiwix `/search` endpoint requires scoping to a specific book — searches without `books.name` will fail if your server hosts ZIMs in multiple languages
 
 ## Relevance Weighting
 
-When using `--all`, the query is matched against a keyword map to prioritize relevant books. For example:
-
-- `raspberry pi`, `gpio` → raspberrypi, electronics books searched first
-- `docker`, `nginx`, `bash` → devops, unix books searched first
-- `python`, `algorithm` → devdocs-python, freecodecamp, cs books searched first
-- `machine learning`, `artificial intelligence` → ai books searched first
-
-Unmatched books are appended after matched ones and still searched.
+When using `--all`, the query is matched against `keyword_mapping` in `config.yaml` to prioritize relevant books. Matched books are searched first in order of relevance score; unmatched books follow. The mapping is fully user-configurable — add new keywords and books as your ZIM library grows.
 
 ## ZIM Library
 
@@ -118,8 +127,7 @@ The default books list includes the following ZIM files. Update `config.yaml` to
 
 ## Roadmap
 
-- [ ] Agent tool definition (OpenAI function calling schema)
-- [ ] Expand keyword mapping for relevance weighting (open for contributions)
+- [ ] Expand keyword mapping (open for contributions)
 
 ## License
 
