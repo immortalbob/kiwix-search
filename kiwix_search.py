@@ -107,7 +107,18 @@ def print_results(results):
             print(f"   URL: {url_path}")
         print()
 
-def main():
+def search(query, book=None, all_books=False):
+    """
+    Search Kiwix server and return results as a list of dictionaries.
+    
+    Args:
+        query (str): The search query string
+        book (str, optional): Specific book to search. If None, searches default book.
+        all_books (bool): If True, search all books
+    
+    Returns:
+        list: List of result dictionaries with keys 'title', 'excerpt', 'url_path', 'book'
+    """
     # Define the list of books
     books = [
         'ai.stackexchange.com_en_all_2026-02',
@@ -140,6 +151,18 @@ def main():
         'wiktionary_en_all_nopic_2025-09'
     ]
     
+    # Perform search based on arguments
+    if all_books:
+        results = search_kiwix_all_books(query, books)
+    elif book:
+        results = search_kiwix_single_book(query, book)
+    else:
+        # Default behavior - search wikipedia
+        results = search_kiwix_single_book(query, 'wikipedia_en_all_maxi_2026-02')
+    
+    return results
+
+def main():
     # Set up argument parser
     parser = argparse.ArgumentParser(description='Search Kiwix server')
     parser.add_argument('query', nargs='+', help='Search term(s)')
@@ -151,16 +174,11 @@ def main():
     # Get search term from command line
     search_term = " ".join(args.query)
     
-    # Perform search based on arguments
+    # Print search term
     print(f"Searching for: '{search_term}'")
     
-    if args.all:
-        results = search_kiwix_all_books(search_term, books)
-    elif args.book:
-        results = search_kiwix_single_book(search_term, args.book)
-    else:
-        # Default behavior - search wikipedia
-        results = search_kiwix_single_book(search_term, 'wikipedia_en_all_maxi_2026-02')
+    # Call the search function with CLI arguments
+    results = search(search_term, book=args.book, all_books=args.all)
     
     # Print results
     print_results(results)
