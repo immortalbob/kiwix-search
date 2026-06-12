@@ -6,7 +6,7 @@ A command-line search tool and importable Python module for querying a self-host
 
 - Python 3.x
 - A running Kiwix server (see [kiwix-serve](https://github.com/kiwix/kiwix-tools))
-- Dependencies: `requests`, `beautifulsoup4`
+- Dependencies: `requests`, `beautifulsoup4`, `PyYAML`
 
 ```bash
 pip install -r requirements.txt
@@ -14,13 +14,22 @@ pip install -r requirements.txt
 
 ## Configuration
 
-The Kiwix server URL and book list are defined in `kiwix_search.py`. Update the server URL to match your setup:
+Copy `config.example.yaml` to `config.yaml` and update to match your setup:
 
-```python
-search_url = "http://192.168.3.5:8081/search"  # your Kiwix server
+```bash
+cp config.example.yaml config.yaml
 ```
 
-The `books` list reflects the ZIM files available on your server. Book names correspond to ZIM filenames without the `.zim` extension. Update this list to match your installed ZIMs.
+```yaml
+kiwix_server_url: "http://192.168.3.5:8081"
+default_book: "wikipedia_en_all_maxi_2026-02"
+books:
+  - "wikipedia_en_all_maxi_2026-02"
+  - "raspberrypi.stackexchange.com_en_all_2026-02"
+  # ... add your ZIM files here
+```
+
+If `config.yaml` is not found, the script falls back to built-in defaults with a warning. Book names correspond to ZIM filenames without the `.zim` extension.
 
 ## CLI Usage
 
@@ -35,10 +44,16 @@ python kiwix_search.py --book unix.stackexchange.com_en_all_2026-02 bash scripti
 python kiwix_search.py -b raspberrypi.stackexchange.com_en_all_2026-02 gpio pwm
 ```
 
-### Search all configured books
+### Search all configured books (relevance-weighted)
 ```bash
 python kiwix_search.py --all docker networking
-python kiwix_search.py -a esp32 wake word detection
+python kiwix_search.py -a raspberry pi gpio
+```
+
+### Fetch full article content
+```bash
+python kiwix_search.py --fetch /content/wikipedia_en_all_maxi_2026-02/Python_(programming_language)
+python kiwix_search.py -f /content/raspberrypi.stackexchange.com_en_all_2026-02/questions/117591/controlling-raspberry-pi-gpio-with-c-and-python
 ```
 
 ## Module Usage
@@ -46,7 +61,7 @@ python kiwix_search.py -a esp32 wake word detection
 `kiwix_search` can be imported directly for use in scripts or agent tool integrations:
 
 ```python
-from kiwix_search import search
+from kiwix_search import search, fetch_article
 
 # Search default book (Wikipedia)
 results = search("artificial intelligence")
@@ -54,8 +69,11 @@ results = search("artificial intelligence")
 # Search a specific book
 results = search("gpio pwm", book="raspberrypi.stackexchange.com_en_all_2026-02")
 
-# Search all configured books
-results = search("docker networking", all_books=True)
+# Search all configured books with relevance weighting
+results = search("raspberry pi gpio", all_books=True)
+
+# Fetch full article text from a result URL path
+article = fetch_article(results[0]['url_path'])
 
 # Results are a list of dicts
 for r in results:
@@ -68,17 +86,28 @@ for r in results:
 ## How It Works
 
 - Single book searches return up to 5 results
-- `--all` / `all_books=True` queries each configured book individually, pulls top 3 results per book, deduplicates by URL path, and returns the top 10 combined results
-- Results include title, source book, excerpt, and full article URL path
+- `--all` / `all_books=True` uses keyword-based relevance weighting to prioritize the most relevant books for the query, then searches all configured books in that order
+- Results are deduplicated by URL path and the top 10 are returned
+- `fetch_article()` retrieves the full plain text of any article by URL path — enables a complete search → read loop for agent use
 - The Kiwix `/search` endpoint requires scoping to a specific book — searches without `books.name` will fail if your server hosts ZIMs in multiple languages
+
+## Relevance Weighting
+
+When using `--all`, the query is matched against a keyword map to prioritize relevant books. For example:
+
+- `raspberry pi`, `gpio` → raspberrypi, electronics books searched first
+- `docker`, `nginx`, `bash` → devops, unix books searched first
+- `python`, `algorithm` → devdocs-python, freecodecamp, cs books searched first
+- `machine learning`, `artificial intelligence` → ai books searched first
+
+Unmatched books are appended after matched ones and still searched.
 
 ## ZIM Library
 
-The default books list includes the following ZIM files. Update to match your server:
+The default books list includes the following ZIM files. Update `config.yaml` to match your server:
 
 - `wikipedia_en_all_maxi_2026-02` — English Wikipedia (full)
 - `wiktionary_en_all_nopic_2025-09` — English Wiktionary
-- `wikivoyage_de_all_maxi_2026-04` — German Wikivoyage
 - `ifixit_en_all_2025-12` — iFixit repair guides
 - `freecodecamp_en_all_2026-05` — freeCodeCamp
 - `freecodecamp_en_coding-interview-prep_2026-05` — freeCodeCamp interview prep
@@ -89,10 +118,8 @@ The default books list includes the following ZIM files. Update to match your se
 
 ## Roadmap
 
-- [ ] Config file for server URL and book list instead of hardcoded values
-- [ ] Relevance-weighted multi-book search (prioritize books by query context)
 - [ ] Agent tool definition (OpenAI function calling schema)
-- [ ] Fetch and return full article content by URL path
+- [ ] Expand keyword mapping for relevance weighting (open for contributions)
 
 ## License
 

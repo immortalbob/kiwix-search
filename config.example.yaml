@@ -1,0 +1,42 @@
+# Kiwix Search Configuration
+# This file contains configuration for the kiwix_search.py script
+
+# The URL of the Kiwix server
+# Default: http://192.168.3.5:8081
+kiwix_server_url: "http://192.168.3.5:8081"
+
+# The default book to search when no specific book is provided
+# Default: wikipedia_en_all_maxi_2026-02
+default_book: "wikipedia_en_all_maxi_2026-02"
+
+# List of all available books to search
+# Each book is identified by its unique name
+books:
+  - "ai.stackexchange.com_en_all_2026-02"
+  - "arduino.stackexchange.com_en_all_2026-02"
+  - "cs.stackexchange.com_en_all_2026-02"
+  - "datascience.stackexchange.com_en_all_2026-02"
+  - "dba.stackexchange.com_en_all_2026-02"
+  - "devdocs_en_nginx_2026-04"
+  - "devdocs_en_python_2026-05"
+  - "devops.stackexchange.com_en_all_2026-02"
+  - "electronics.stackexchange.com_en_all_2026-02"
+  - "freecodecamp_en_all_2026-05"
+  - "freecodecamp_en_coding-interview-prep_2026-05"
+  - "freecodecamp_en_rosetta-code_2026-05"
+  - "ifixit_en_all_2025-12"
+  - "iot.stackexchange.com_en_all_2026-02"
+  - "math.stackexchange.com_en_all_2026-02"
+  - "mathematica.stackexchange.com_en_all_2026-02"
+  - "movies.stackexchange.com_en_all_2026-02"
+  - "raspberrypi.stackexchange.com_en_all_2026-02"
+  - "retrocomputing.stackexchange.com_en_all_2026-02"
+  - "reverseengineering.stackexchange.com_en_all_2026-02"
+  - "robotics.stackexchange.com_en_all_2026-02"
+  - "scicomp.stackexchange.com_en_all_2026-02"
+  - "scifi.stackexchange.com_en_all_2026-02"
+  - "space.stackexchange.com_en_all_2026-02"
+  - "unix.stackexchange.com_en_all_2026-02"
+  - "wikipedia_en_all_maxi_2026-02"
+  - "wikivoyage_de_all_maxi_2026-04"
+  - "wiktionary_en_all_nopic_2025-09"
