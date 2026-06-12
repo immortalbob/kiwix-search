@@ -125,6 +125,16 @@ The default books list includes the following ZIM files. Update `config.yaml` to
 - `devdocs_en_python_2026-05` — Python documentation
 - Stack Exchange communities: `ai`, `arduino`, `cs`, `datascience`, `dba`, `devops`, `electronics`, `iot`, `math`, `mathematica`, `movies`, `raspberrypi`, `retrocomputing`, `reverseengineering`, `robotics`, `scicomp`, `scifi`, `space`, `unix`
 
+## Tools
+
+### Open WebUI
+
+`tools/kiwix_openwebui_tool.py` is a native Open WebUI tool that exposes Kiwix search directly to any model running in Open WebUI.
+
+**Install:** Workspace → Tools → Create Tool → paste file contents → save.
+
+The tool uses the same relevance-weighted book prioritization as the core library. Tag index pages are filtered from results automatically. Update `kiwix_url` and `books` in the `__init__` method to match your server.
+
 ## Roadmap
 
 - [ ] Expand keyword mapping (open for contributions)
